@@ -333,54 +333,7 @@ def send_confirmation_email(data: dict) -> bool:
     msg['From'] = config.EMAIL_SENDER
     msg['To'] = recipient
 
-    try:
-        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT) as server:
-            server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
-            server.sendmail(config.EMAIL_SENDER, recipient, msg.as_string())
-        print(f" [x] Email отправлен на {recipient}")
-        return True
-    except Exception as e:
-        print(f" [!] Ошибка отправки: {e}")
-        return False
-
-def callback(ch, method, properties, body):
-    """Обработчик входящих сообщений."""
-    try:
-        data = json.loads(body)
-        if send_confirmation_email(data):
-            ch.basic_ack(delivery_tag=method.delivery_tag)  # ✅ Подтверждаем
-        else:
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)  # 🔁 Повтор
-    except json.JSONDecodeError:
-        print(" [!] Ошибка парсинга JSON")
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)  # ❌ Отклоняем
-
-def main():
-    while True:
-        try:
-            connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=config.RABBITMQ_HOST)
-            )
-            channel = connection.channel()
-            channel.queue_declare(queue=config.QUEUE_NAME, durable=True)
-            channel.basic_qos(prefetch_count=1)
-            
-            channel.basic_consume(
-                queue=config.QUEUE_NAME,
-                on_message_callback=callback,
-                auto_ack=False
-            )
-            print(f" [*] Email-сервис: ожидает сообщения в '{config.QUEUE_NAME}'")
-            channel.start_consuming()
-        except pika.exceptions.AMQPConnectionError:
-            print(" [!] Потеряно соединение с RabbitMQ. Переподключение через 5 сек...")
-            time.sleep(5)
-        except KeyboardInterrupt:
-            print("\n [*] Завершение работы...")
-            break
-
-if __name__ == "__main__":
-    main()
+ ...
 ```
 
 ### 4. Документация `email_service/README.md`
