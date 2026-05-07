@@ -1,257 +1,562 @@
-Инструкция для Студента-разработчика
-Вы — владелец своего модуля. Вы работаете в своей "песочнице" (ветке) и предлагаете свои изменения команде через Pull Request.
-# Шаг 1: Подготовка рабочего пространства ( делается один раз)
-1.	Клонируйте репозиторий: git clone <URL_репозитория>
-2.	Перейдите в папку проекта: cd event-bridge-project
-3.	Создайте и активируйте виртуальное окружение:
-python -m venv venv
-source venv/bin/activate  # Для Windows: venv\Scripts\activate
-4.	Установите все зависимости: pip install -r requirements.txt
+\# 🎓 Инструкция для Студента-разработчика  
+> **EventBridge 2.0 — Микросервисная архитектура с RabbitMQ**
 
-# Шаг 2: Создание своей ветки
-1.	Всегда начинайте работу с обновления main!
+Вы — владелец своего модуля. Вы работаете в своей «песочнице» (ветке) и предлагаете свои изменения команде через **Pull Request**.
+
+---
+
+## 📋 Оглавление
+1. [🚀 Быстрый старт](#-быстрый-старт)
+2. [🌿 Работа с ветками](#-работа-с-ветками)
+3. [💻 Разработка модуля](#-разработка-модуля)
+4. [📤 Отправка работы на проверку](#-отправка-работы-на-проверку)
+5. [🔁 Ревью и доработки](#-ревью-и-доработки)
+6. [🐳 Запуск всей системы: Docker Compose](#-запуск-всей-системы-docker-compose)
+7. [📦 Пример реализации: `email-service`](#-пример-реализации-email-service)
+8. [✅ Чек-лист перед отправкой PR](#-чек-лист-перед-отправкой-pr)
+9. [❓ FAQ: Merge и конфликты](#-faq-merge-и-конфликты)
+
+---
+
+## 🚀 Быстрый старт
+
+### Шаг 1: Подготовка рабочего пространства *(делается один раз)*
+
+```bash
+# 1. Клонируйте репозиторий
+git clone <URL_репозитория>
+
+# 2. Перейдите в папку проекта
+cd event-bridge-project
+
+# 3. Создайте и активируйте виртуальное окружение
+python -m venv venv
+
+# Для macOS/Linux:
+source venv/bin/activate
+
+# Для Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+
+# Для Windows (CMD):
+venv\Scripts\activate
+
+# 4. Установите зависимости
+pip install -r requirements.txt
+```
+
+> ⚠️ **Важно:** Файл `.env` с секретами **никогда** не коммитьте в репозиторий! Он уже добавлен в `.gitignore`.
+
+---
+
+## 🌿 Работа с ветками
+
+### Шаг 2: Создание своей ветки
+
+```bash
+# 1. Всегда начинайте с обновления main!
 git checkout main
 git pull origin main
-2.	Создайте свою личную ветку для вашего модуля. Название должно быть осмысленным.
-•	Формат: feature/<название-вашего-модуля>
-•	Пример: git checkout -b feature/email-service
-3.	Теперь вы в своей ветке. Здесь вы можете делать что угодно, не боясь сломать работу других.
 
-# Шаг 3: Разработка модуля
-1.	Создайте папку для вашего сервиса (например, email_service/).
-2.	Внутри создайте свой Python-файл (main.py или service.py).
-3.	Пишите код, реализуя ваше ТЗ.
-4.	Делайте коммиты часто! Как только сделали небольшую, но законченную часть — делайте коммит.
-git add .   # или git add email_service/main.py
-git commit -m "feat: implement email sending logic"
-•	Хорошие сообщения для коммитов: "feat: add basic consumer setup", "fix: correct smtp server address", "docs: add comments to main function".
+# 2. Создайте личную ветку для вашего модуля
+# Формат: feature/<название-вашего-модуля>
+git checkout -b feature/email-service
+```
 
-# Шаг 4: Отправка работы на проверку (Pull Request)
-1.	Когда ваш модуль готов и протестирован локально, отправьте вашу ветку на GitHub:
+| Формат ветки | Пример | Описание |
+|--------------|--------|----------|
+| `feature/<module>` | `feature/email-service` | Новый функционал |
+| `fix/<module>` | `fix/database-connection` | Исправление бага |
+| `docs/<module>` | `docs/add-readme` | Обновление документации |
+
+> ✅ Теперь вы в своей ветке. Здесь вы можете экспериментировать, не боясь сломать работу других.
+
+---
+
+## 💻 Разработка модуля
+
+### Шаг 3: Пишем код
+
+1. **Создайте папку для сервиса** (например, `email_service/`)
+2. **Структура файлов внутри:**
+   ```
+   email_service/
+   ├── main.py           # Основная логика
+   ├── config.py         # Конфигурация из .env
+   ├── requirements.txt  # Зависимости сервиса
+   └── README.md         # Инструкция по запуску
+   ```
+
+3. **Коммитьте часто!** Как только сделали небольшую, но законченную часть:
+   ```bash
+   git add email_service/main.py
+   git commit -m "feat: implement email sending logic"
+   ```
+
+### 📝 Конвенция коммитов
+
+| Префикс | Когда использовать | Пример |
+|---------|-------------------|--------|
+| `feat:` | Новый функционал | `feat: add RabbitMQ consumer` |
+| `fix:` | Исправление бага | `fix: correct SMTP port` |
+| `docs:` | Документация | `docs: add README for email service` |
+| `refactor:` | Улучшение кода без изменений логики | `refactor: extract send_email function` |
+| `chore:` | Вспомогательные задачи | `chore: update requirements.txt` |
+
+---
+
+## 📤 Отправка работы на проверку
+
+### Шаг 4: Создаём Pull Request
+
+```bash
+# 1. Отправьте ветку на GitHub
 git push origin feature/email-service
+```
 
-2.	Зайдите на сайт GitHub. Вы увидите желтую плашку с предложением "Compare & pull request". Нажмите на нее.
-3.	Заполните форму Pull Request:
-•	Title (Заголовок): Кратко и ясно, что вы сделали. Пример: Feature: Email Confirmation Service.
-•	Description (Описание): Подробно опишите, что было сделано. Можно использовать чек-листы.
-Реализован сервис для отправки email-подтверждений.
+2. **Зайдите на GitHub** → вы увидите жёлтую плашку `Compare & pull request` → нажмите её.
 
-- [x] Подключается к RabbitMQ и слушает `email_queue`.
-- [x] Отправляет email через SMTPLIB.
-- [x] Реализована обработка ошибок и `basic_ack`.
-4.	Нажмите Create pull request.
+3. **Заполните форму PR:**
 
+| Поле | Что писать | Пример |
+|------|-----------|--------|
+| **Title** | Кратко и ясно | `Feature: Email Confirmation Service` |
+| **Description** | Подробно, с чек-листом | См. шаблон ниже 👇 |
 
-# Шаг 5: Ревью и доработки
-1.	Ваш тимлид (преподаватель) проверит ваш код.
-2.	Он может оставить комментарии прямо в коде. Вы получите уведомление.
-3.	Если он запросил изменения (Changes requested), вы должны:
-•	Внести исправления в код в своей ветке на вашем компьютере.
-•	Сделать новый коммит: git commit -m "fix: apply review comments"
-•	Отправить изменения: git push origin feature/email-service
-•	Pull Request обновится автоматически! Не нужно создавать новый.
-4.	Когда все исправления внесены, вы можете написать в PR комментарий: "@<имя_тимлида> Готово, можно проверять снова".
-5.	Когда PR будет одобрен (Approved) и смержен (Merged), ваша работа официально принята!
-Как запустить все сервисы одновременно?
-Промышленный Стандарт — Docker Compose
-Это самый мощный и изолированный подход. Вы описываете всю вашу систему, включая RabbitMQ, Redis и все ваши сервисы, в одном файле docker-compose.yml.
-Преимущества:
-•	Полная изоляция: Никаких конфликтов версий Python или библиотек. У каждого студента будет абсолютно идентичное окружение.
-•	Вся система в одном файле: Описание всей архитектуры в декларативном виде.
-•	Одна команда для всего: docker-compose up запускает ВСЁ, включая RabbitMQ. docker-compose down останавливает и удаляет всё.
-Пример кусочка docker-compose.yml:
+#### 📋 Шаблон описания PR
+```markdown
+## 📌 Что реализовано
+- [ ] Подключается к RabbitMQ и слушает `email_queue`
+- [ ] Отправляет email через SMTPLIB
+- [ ] Реализована обработка ошибок и `basic_ack`
+- [ ] Добавлен `README.md` с инструкцией
+
+## 🧪 Как тестировать
+1. Запустить сервис: `python email_service/main.py`
+2. Отправить тестовое событие через `test_publisher.py`
+3. Проверить получение письма на `test@example.com`
+
+## 📸 Логи/Скриншоты
+<!-- Вставьте вывод консоли или скриншот успешной отправки -->
+```
+
+4. Нажмите **`Create pull request`** 🎉
+
+---
+
+## 🔁 Ревью и доработки
+
+### Шаг 5: Работа с комментариями
+
+```mermaid
+graph LR
+    A[Вы создали PR] --> B[Тимлид проверяет]
+    B --> C{Есть замечания?}
+    C -->|Да | D[Вносите правки в своей ветке]
+    D --> E[git commit + git push]
+    E --> F[PR обновляется автоматически]
+    F --> B
+    C -->|Нет | G[✅ Approved + Merged]
+```
+
+1. Если запрошены изменения (**Changes requested**):
+   ```bash
+   # Внесите исправления в коде
+   git add .
+   git commit -m "fix: apply review comments"
+   git push origin feature/email-service
+   # ✅ PR обновится сам, создавать новый не нужно!
+   ```
+
+2. Напишите в комментариях к PR:
+   > `@<имя_тимлида> Готово, можно проверять снова` 👀
+
+3. Когда PR **Approved** и **Merged** — ваша работа принята! 🎊
+
+---
+
+## 🐳 Запуск всей системы: Docker Compose
+
+> 💡 **Промышленный стандарт** — описывайте всю инфраструктуру в одном файле.
+
+### Преимущества
+| Преимущество | Почему это важно |
+|--------------|-----------------|
+| 🔒 Полная изоляция | Никаких конфликтов версий Python или библиотек |
+| 📦 Вся система в одном файле | Декларативное описание архитектуры |
+| ⚡ Одна команда для всего | `docker-compose up` запускает **всё**, включая RabbitMQ |
+
+### Пример `docker-compose.yml`
+```yaml
 version: '3.8'
 
 services:
-  # Наша "нервная система"
+  # 🐇 Наша "нервная система"
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: eventbridge_rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Web UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
-  # Наш API шлюз
+  # 🔑 Redis для аналитики
+  redis:
+    image: redis:7-alpine
+    container_name: eventbridge_redis
+    ports:
+      - "6379:6379"
+
+  # 🌐 API Gateway
   api:
-    build: ./api_gateway_service # Указываем путь к папке с Dockerfile
+    build: ./api_gateway_service
+    container_name: api_gateway
     ports:
       - "8000:8000"
     depends_on:
-      - rabbitmq # Запустится только после rabbitmq
+      - rabbitmq
+    env_file:
+      - .env
 
-  # Наш почтовый сервис
+  # 📧 Email Service
   email_service:
     build: ./email_service
+    container_name: email_service
     depends_on:
       - rabbitmq
-    # ... и так далее для всех 10 сервисов
+    env_file:
+      - .env
 
-Вот например как должен быть реализован сервис: email-service
-для того чтобы он мог успешно быть подключен к основной ветке
-Реализация: Модуль email-service
-1. Структура Папок и Файлов
-Студент должен создать не один файл, а целую папку для своего сервиса. Это изолирует его код и конфигурацию.
+  # ➕ Добавьте остальные 8 сервисов по аналогии...
+```
 
+### Полезные команды
+```bash
+# Запустить всё в фоновом режиме
+docker-compose up -d
+
+# Посмотреть логи всех сервисов
+docker-compose logs -f
+
+# Остановить и удалить контейнеры
+docker-compose down
+
+# Пересобрать и запустить заново
+docker-compose up -d --build
+```
+
+> 🔗 **Доступ к RabbitMQ UI:** `http://localhost:15672` (логин/пароль: `guest`/`guest`)
+
+---
+
+## 📦 Пример реализации: `email-service`
+
+### 1. Структура папок
+```
 event-bridge-project/
-├── ... (другие сервисы)
-├── email_service/
-│   ├── main.py           # Основная логика сервиса
-│   ├── config.py         # Файл для загрузки конфигурации
-│   ├── requirements.txt  # Зависимости ИМЕННО этого сервиса
-│   └── README.md         # Инструкция по запуску и настройке
-└── .env                  # Общий файл с секретами (в .gitignore!)
+├── .env                  # Секреты (в .gitignore!)
+├── docker-compose.yml
+├── requirements.txt      # Общие зависимости
+└── email_service/
+    ├── main.py           # Основная логика
+    ├── config.py         # Конфигурация
+    ├── requirements.txt  # Зависимости сервиса
+    └── README.md         # Документация
+```
 
-2. Конфигурация (Без паролей в коде!)
-Это критически важный момент. Пароли, адреса серверов и другие "секреты" никогда не должны быть в коде. Они выносятся в переменные окружения.
-a) Файл .env (в корне проекта)
-Этот файл должен быть добавлен в .gitignore, чтобы случайно не попасть на GitHub!
-# .env
+### 2. Конфигурация (БЕЗ паролей в коде! 🔐)
 
-# RabbitMQ
+#### Файл `.env` (в корне проекта)
+```env
+# 🐇 RabbitMQ
 RABBITMQ_HOST=localhost
 
-# Email Service
-EMAIL_SENDER_ADDRESS=your_actual_email@gmail.com
-EMAIL_SENDER_PASSWORD=your_google_app_password_here
+# 📧 Email Service
+EMAIL_SENDER_ADDRESS=your_email@gmail.com
+EMAIL_SENDER_PASSWORD=your_google_app_password  # ← Не обычный пароль!
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+```
 
-b) Файл email_service/config.py
-Этот файл отвечает за чтение переменных из .env и предоставление их основной логике.
-# email_service/config.py
-
+#### Файл `email_service/config.py`
+```python
 import os
 from dotenv import load_dotenv
 
-# Загружаем переменные окружения из файла .env
-# find_dotenv() будет искать .env файл, двигаясь вверх по дереву папок
-from dotenv import find_dotenv
-load_dotenv(find_dotenv())
+# Загружаем переменные из .env
+load_dotenv()
 
-# --- Настройки RabbitMQ ---
+# 🐇 RabbitMQ
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 QUEUE_NAME = "email_queue"
 
-...
+# 📧 Email
+EMAIL_SENDER = os.getenv("EMAIL_SENDER_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_SENDER_PASSWORD")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
+```
 
-c) Файл email_service/requirements.txt
-pika
-python-dotenv
+#### Файл `email_service/requirements.txt`
+```txt
+pika>=1.3.0
+python-dotenv>=1.0.0
+```
 
-3. Основная логика 
-Файл email_service/main.py должен быть не просто скриптом, а хорошо структурированным приложением.
-# email_service/main.py
-
+### 3. Основная логика `email_service/main.py`
+```python
 import pika
 import json
 import smtplib
 import time
-import sys
 from email.mime.text import MIMEText
-
-# Импортируем конфигурацию из нашего config.py
 import config
-# Формирует и отправляет email-подтверждение.
-def send_confirmation_email(data: dict):
 
-
-    sender = config.EMAIL_SENDER
-    password = config.EMAIL_PASSWORD
+def send_confirmation_email(data: dict) -> bool:
+    """Формирует и отправляет email-подтверждение."""
     recipient = data.get('user_email')
-    
     if not recipient:
-        print(" [!] Ошибка: в сообщении отсутствует 'user_email'.")
-        return
-...
-    
+        print(" [!] Ошибка: отсутствует 'user_email'")
+        return False
 
-4. Документация 
-Файл email_service/README.md — это "лицо" модуля.
-Модуль: Email Service
-Этот сервис отвечает за отправку email-подтверждений пользователям после их регистрации на событие.
-Зона ответственности
--   Подписывается на очередь `email_queue`.
--   При получении сообщения, отправляет email с деталями регистрации.
--   Использует SMTP для отправки через Gmail.
-Настройка
-1.  Убедитесь, что у вас есть корневой файл `.env`.
-2.  В файле `.env` должны быть определены следующие переменные:
+    subject = f"Подтверждение регистрации на {data.get('event_name', 'событие')}"
+    body = (
+        f"Здравствуйте, {data.get('user_name', 'участник')}!\n\n"
+        f"Вы успешно зарегистрированы на '{data.get('event_name')}'.\n"
+        f"ID регистрации: {data.get('registration_id')}"
+    )
 
-    RABBITMQ_HOST=localhost
-    EMAIL_SENDER_ADDRESS=your_gmail@gmail.com
-    EMAIL_SENDER_PASSWORD=your_16_digit_app_password
-3.  `EMAIL_SENDER_PASSWORD` — это **пароль приложения Google**, а не ваш обычный пароль от аккаунта.
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = config.EMAIL_SENDER
+    msg['To'] = recipient
 
-Установка зависимостей
-Для работы сервиса необходимо установить зависимости из локального `requirements.txt`:
-pip install -r email_service/requirements.txt
-Запуск
-Сервис запускается из корневой директории проекта командой:
+    try:
+        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT) as server:
+            server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
+            server.sendmail(config.EMAIL_SENDER, recipient, msg.as_string())
+        print(f" [x] Email отправлен на {recipient}")
+        return True
+    except Exception as e:
+        print(f" [!] Ошибка отправки: {e}")
+        return False
+
+def callback(ch, method, properties, body):
+    """Обработчик входящих сообщений."""
+    try:
+        data = json.loads(body)
+        if send_confirmation_email(data):
+            ch.basic_ack(delivery_tag=method.delivery_tag)  # ✅ Подтверждаем
+        else:
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)  # 🔁 Повтор
+    except json.JSONDecodeError:
+        print(" [!] Ошибка парсинга JSON")
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)  # ❌ Отклоняем
+
+def main():
+    while True:
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host=config.RABBITMQ_HOST)
+            )
+            channel = connection.channel()
+            channel.queue_declare(queue=config.QUEUE_NAME, durable=True)
+            channel.basic_qos(prefetch_count=1)
+            
+            channel.basic_consume(
+                queue=config.QUEUE_NAME,
+                on_message_callback=callback,
+                auto_ack=False
+            )
+            print(f" [*] Email-сервис: ожидает сообщения в '{config.QUEUE_NAME}'")
+            channel.start_consuming()
+        except pika.exceptions.AMQPConnectionError:
+            print(" [!] Потеряно соединение с RabbitMQ. Переподключение через 5 сек...")
+            time.sleep(5)
+        except KeyboardInterrupt:
+            print("\n [*] Завершение работы...")
+            break
+
+if __name__ == "__main__":
+    main()
+```
+
+### 4. Документация `email_service/README.md`
+```markdown
+# 📧 Email Service
+
+Сервис отправки подтверждений регистрации.
+
+## 🔧 Настройка
+
+1. Убедитесь, что в корне проекта есть файл `.env` с переменными:
+   ```env
+   EMAIL_SENDER_ADDRESS=your_email@gmail.com
+   EMAIL_SENDER_PASSWORD=your_app_password
+   ```
+
+2. > ⚠️ **Важно:** `EMAIL_SENDER_PASSWORD` — это **пароль приложения Google**, 
+   а не пароль от аккаунта. 
+   [Как создать](https://support.google.com/accounts/answer/185833)
+
+## 🚀 Запуск
+
+```bash
+# Из корня проекта:
 python email_service/main.py
+```
 
-Прежде чем отправлять работу на проверку, студент должен ответить "ДА" на все эти вопросы:
-•	Мой код находится в отдельной папке (например, `email_service/`)?
-•	Все пароли, адреса и другие "секреты" вынесены в `config.py` и читаются из `.env`?
-•	В коде нет захардкоженных значений (`"localhost"`, `"email_queue"`, паролей)?
-•	В `main.py` есть обработка ошибок (например, `try...except`)?
-•	Мой сервис корректно завершает работу по `Ctrl+C`?
-•	Мой сервис пытается переподключиться к RabbitMQ, если связь оборвалась?
-•	Я использую ручное подтверждение сообщений (`auto_ack=False` и `basic_ack`)?
-•	Я заполнил `README.md` для своего модуля, объяснив, как его настроить и запустить?
-•	Мой код отформатирован (например, с помощью `black` или `autopep8`) и хорошо прокомментирован?
+## 🧪 Тестирование
 
-Если на все вопросы ответ "ДА" — этот модуль готов к ревью и слиянию в `main` ветку. 
+```bash
+# Отправьте тестовое событие:
+python test_publisher.py --queue email_queue --vip false
+```
+```
 
-Процесс работы студента: Шаг за Шагом
-1.	Клонирует (один раз): Студент клонирует  основной репозиторий event-bridge-project себе на компьютер.
-2.	Создает Ветку: Перед началом работы создает свою личную ветку от актуальной версии main (обязательно сделав git pull origin main перед этим). Например, git checkout -b feature/database-service.
-3.	Разрабатывает в изоляции: В своей ветке создает свою папку, например, (database_service/) и пишет код, следуя  ТЗ. В своем коде использует брокер (RabbitMQ), прописывая в .env файле адрес для подключения. Код который будет написано — это клиент брокера.
-4.	Тестирует Локально: Он запускает свой сервис (и, возможно, другие, чтобы проверить взаимодействие) и убеждается, что все работает как надо.
-5.	Создает Pull Request: Когда работа готова, он отправляет свою ветку на GitHub (git push ...) и создает Pull Request в main ветку.
+---
 
-Вопрос 1: Кто нажимает кнопку "Merge"?
-Ответ: Тимлид/Преподаватель
+## ✅ Чек-лист перед отправкой PR
+
+> Прежде чем создавать Pull Request, ответьте **ДА** на все вопросы:
+
+### 📁 Структура
+- [ ] Код находится в отдельной папке (`email_service/`, а не в корне)?
+- [ ] Есть файл `requirements.txt` именно для этого сервиса?
+- [ ] Создан `README.md` с инструкцией по запуску?
+
+### 🔐 Безопасность
+- [ ] Все пароли, адреса и секреты вынесены в `config.py` + `.env`?
+- [ ] В коде **нет** захардкоженных значений (`"localhost"`, паролей, токенов)?
+- [ ] Файл `.env` добавлен в `.gitignore`?
+
+### 🛡 Надёжность
+- [ ] Есть обработка ошибок (`try...except`) вокруг критических операций?
+- [ ] Сервис корректно завершает работу по `Ctrl+C`?
+- [ ] Есть логика переподключения к RabbitMQ при обрыве связи?
+- [ ] Используется ручное подтверждение (`auto_ack=False` + `basic_ack`)?
+
+### 🧹 Качество кода
+- [ ] Код отформатирован (`black` / `autopep8`)?
+- [ ] Сложные места прокомментированы?
+- [ ] Имена переменных и функций понятны без перевода?
+
+> 🎯 **Если на все вопросы ответ «ДА»** — ваш модуль готов к ревью! 🚀
+
+---
+
+## ❓ FAQ: Merge и конфликты
+
+### Вопрос 1: Кто нажимает кнопку «Merge»?
+> **Ответ: Тимлид / Преподаватель**
+
 Это фундаментальное правило защиты основной ветки.
-Процесс: Студент создал PR -> Тимлид проверил-> Оставил комментарии -> Студент внес правки -> Тимлид снова проверил и нажал  Approve -> Тимлид нажимает Merge pull request.
 
-Вопрос 2: Кто и как решает конфликты слияния (Merge Conflicts)?
-Ответ: Конфликты решает Студент (автор Pull Request) в своей ветке.
-Это тоже ключевой принцип профессиональной разработки: "Чей Pull Request — тот и отвечает за его чистоту".
+```mermaid
+sequenceDiagram
+    participant S as Студент
+    participant T as Тимлид
+    participant G as GitHub
 
-Что такое конфликт слияния?
-Представьте, что в main ветке в файле requirements.txt была строка pika==1.2.0.
-•	Студент А в своей ветке поменял ее на pika==1.3.0.
-•	Студент Б в своей ветке поменял эту же строку на pika==1.3.1.
-Тимплид  вливает  PR Студента А.  В main теперь pika==1.3.0.
-Когда Студент Б пытается создать PR, Git видит проблему: "Я не могу автоматически слить изменения. В main в этой строке одно, а у Студента Б — другое. Я не знаю, что правильно. Решайте сами!"
-"@student_B, у тебя возник merge-конфликт с main. Это значит, что кто-то уже изменил те же строки, что и ты. Тебе нужно обновить свою ветку из main и разрешить конфликт локально."
+    S->>G: Создаёт PR
+    G->>T: Уведомление о новом PR
+    T->>G: Проверяет код, оставляет комментарии
+    G->>S: Уведомление о запрошенных изменениях
+    S->>S: Вносит правки, пушит в свою ветку
+    S->>G: PR обновляется автоматически
+    T->>G: ✅ Approve + Merge
+    G->>S: 🎉 Ваш код в main!
+```
 
-Пошаговая инструкция для студента по решению конфликта:
-Вот что должен сделать студент на своем компьютере:
-1.	Переключиться на свою ветку:
-git checkout feature/database-service
+---
 
-2.	"Забрать" самые свежие изменения из main ветки к себе в ветку. Это и есть шаг, на котором конфликт проявится локально.
+### Вопрос 2: Кто решает конфликты слияния (Merge Conflicts)?
+> **Ответ: Студент (автор Pull Request)**
+
+Принцип: *«Чей Pull Request — тот и отвечает за его чистоту»*.
+
+#### 🤔 Что такое конфликт?
+Представьте файл `requirements.txt`:
+
+| Ветка | Содержимое |
+|-------|-----------|
+| `main` (до вашего PR) | `pika==1.2.0` |
+| Ваш PR | `pika==1.3.1` |
+| Другой PR (уже влит) | `pika==1.3.0` |
+
+Git не знает, какую версию оставить → **конфликт**.
+
+#### 🛠 Пошаговое решение конфликта
+
+```bash
+# 1. Переключитесь на свою ветку
+git checkout feature/email-service
+
+# 2. Заберите свежие изменения из main
 git pull origin main
-Git выдаст сообщение, похожее на это:
-Auto-merging requirements.txt
+# ⚠️ Git сообщит о конфликте:
+# "CONFLICT (content): Merge conflict in requirements.txt"
+```
 
-CONFLICT (content): Merge conflict in requirements.txt
-Automatic merge failed; fix conflicts and then commit the result.
-3.	Открыть конфликтный файл в редакторе кода (VS Code, PyCharm). Редактор подсветит проблемное место. Оно будет выглядеть так:
-<<<<<<< HEAD
-pika==1.3.0
-=======
-pika==1.3.1
->>>>>>> feature/database-service
+3. **Откройте конфликтный файл** в редакторе. Вы увидите маркеры:
+   ```txt
+   <<<<<<< HEAD
+   pika==1.3.0
+   =======
+   pika==1.3.1
+   >>>>>>> feature/email-service
+   ```
 
-•	<<<<<<< HEAD до ======= — это то, что сейчас в main (то, что пришло).
-•	======= до >>>>>>> — это то, что было у студента в его ветке.
-4.	Принять решение и отредактировать файл. Студент должен вручную отредактировать этот блок, оставив только правильную версию, и удалить все маркеры Git (<<<, ===, >>>).
-•	Например, он решает, что версия 1.3.1 — самая новая и правильная. Файл должен стать таким:
-•	pika==1.3.1
-5.	Завершить слияние. После того как все конфликты во всех файлах исправлены, студент должен "сказать" Git, что он закончил:
-git add .  # Добавляем исправленные файлы
-git commit # Git сам предложит сообщение коммита, например "Merge branch 'main' into feature/database-service". Можно просто сохранить и закрыть.
+   | Маркер | Что означает |
+   |--------|--------------|
+   | `<<<<<<< HEAD` | Начало конфликта, версия из `main` |
+   | `=======` | Разделитель версий |
+   | `>>>>>>>` | Конец конфликта, ваша версия |
 
-6.	Отправить исправленную ветку на GitHub.
-git push origin feature/database-service
-Как только отправите эти изменения, GitHub автоматически увидит, что конфликт в Pull Request разрешен, и кнопка "Merge" снова станет зеленой и активной!
+4. **Примите решение** и отредактируйте файл:
+   ```txt
+   # Оставляем самую новую версию:
+   pika==1.3.1
+   # Удаляем все маркеры <<<<<<<, =======, >>>>>>>
+   ```
 
+5. **Завершите слияние:**
+   ```bash
+   git add requirements.txt
+   git commit -m "fix: resolve merge conflict in requirements.txt"
+   git push origin feature/email-service
+   ```
+
+6. ✅ GitHub автоматически обновит PR — кнопка «Merge» снова станет зелёной!
+
+---
+
+## 🎁 Бонус: Полезные команды для повседневной работы
+
+```bash
+# 🔄 Обновить свою ветку из main (без создания конфликта)
+git fetch origin
+git merge origin/main
+
+# 🧹 Отменить последние изменения (осторожно!)
+git reset --soft HEAD~1    # Отменить коммит, оставить изменения
+git checkout -- file.py    # Отменить изменения в файле
+
+# 🔍 Посмотреть историю коммитов в красивом формате
+git log --oneline --graph --all
+
+# 📦 Сохранить текущие изменения «в карман», чтобы переключить ветку
+git stash
+git stash pop  # Вернуть изменения обратно
+```
+
+---
+
+> 💬 **Есть вопросы?**  
+> - Напишите в канал `#eventbridge-help` в Discord  
+> - Создайте Issue в репозитории с меткой `question`  
+> - Спросите на следующем стендапе 🗓
+
+**Удачи в разработке!** 🚀✨
