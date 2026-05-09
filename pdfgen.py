@@ -1,4 +1,16 @@
-from pdfme import build_pdf
+"""PDF ticket generator using ReportLab (replacement for pdfme-based implementation).
+
+Generates VIP and regular tickets and writes them to ./tickets/<random>.pdf
+"""
+import os
+import random
+import string
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import Color
+from reportlab.pdfbase import ttfonts, pdfmetrics
+import qrgen
+
 
 # Cyrillic to Latin transliteration map
 CYRILLIC_MAP = {
@@ -16,103 +28,260 @@ CYRILLIC_MAP = {
 
 
 def transliterate(text):
-    return ''.join(CYRILLIC_MAP.get(c, c) for c in text)
+    return ''.join(CYRILLIC_MAP.get(c, c) for c in (text or ''))
+
+
+def register_cyrillic_font():
+    """Try to find and register a TTF font that supports Cyrillic.
+
+    Returns the registered font name or None if not found.
+    """
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            name = os.path.splitext(os.path.basename(p))[0]
+            try:
+                pdfmetrics.registerFont(ttfonts.TTFont(name, p))
+                return name
+            except Exception:
+                continue
+    return None
+
+
+def contains_cyrillic(text: str) -> bool:
+    if not text:
+        return False
+    for ch in text:
+        o = ord(ch)
+        if (0x0400 <= o <= 0x052F) or (0x2DE0 <= o <= 0x2DFF) or (0xA640 <= o <= 0xA69F):
+            return True
+    return False
+
+
+def _maybe_trans(text: str, font_main: str | None) -> str:
+    """Return text unchanged if a native Cyrillic-capable font is registered,
+    otherwise return a transliterated (Latin) fallback.
+    """
+    if font_main:
+        return text
+    return transliterate(text)
 
 
 def randomize_doc_name():
-    import random
-    import string
+    rn = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    return f"{rn}.pdf"
 
-    random_name = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-    return f'{random_name}.pdf'
+
+def _draw_vip(c: canvas.Canvas, width: float, height: float, name: str, email: str, event: str, date: str, seat: str | None, font_main: str | None = None, font_mono: str | None = None):
+    
+    
+    margin = 36
+    gold = Color(0.85, 0.65, 0.15)
+    bg_dark = Color(0.05, 0.05, 0.08)
+
+    c.setFillColor(bg_dark)
+    c.rect(0, 0, width, height, stroke=0, fill=1)
+
+    # Border
+    c.setLineWidth(3)
+    c.setStrokeColor(gold)
+    c.roundRect(margin / 2, margin / 2, width - margin, height - margin, 12, stroke=1, fill=0)
+
+    mid_x = width / 2
+    y = height - margin - 20
+
+    c.setFillColor(gold)
+    if font_main:
+        c.setFont(font_main, 32)
+    else:
+        c.setFont("Helvetica-Bold", 32)
+    c.drawCentredString(mid_x, y, event)
+    y -= 42
+
+    if font_main:
+        c.setFont(font_main, 14)
+    else:
+        c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(mid_x, y, _maybe_trans("VIP ДОСТУП", font_main))
+    y -= 30
+
+    if font_main:
+        c.setFont(font_main, 12)
+    else:
+        c.setFont("Helvetica-Bold", 12)
+    c.setFillColor(Color(0.95, 0.95, 0.95))
+    label = _maybe_trans("Имя:", font_main)
+    c.drawString(margin + 18, y, f"{label} {name}")
+    y -= 22
+    if font_main:
+        c.setFont(font_main, 10)
+    else:
+        c.setFont("Helvetica", 10)
+    c.setFillColor(Color(0.75, 0.75, 0.85))
+    label = _maybe_trans("Эл. почта:", font_main)
+    c.drawString(margin + 18, y, f"{label} {email}")
+    y -= 18
+    if font_main:
+        c.setFont(font_main, 11)
+    else:
+        c.setFont("Helvetica-Bold", 11)
+    c.setFillColor(gold)
+    label = _maybe_trans("Место / Уровень:", font_main)
+    c.drawString(margin + 18, y, f"{label} {seat or _maybe_trans('* VIP Lounge *', font_main)}")
+    y -= 20
+    if font_main:
+        c.setFont(font_main, 11)
+    else:
+        c.setFont("Helvetica", 11)
+    c.setFillColor(Color(0.9, 0.9, 1.0))
+    label = _maybe_trans("Дата:", font_main)
+    c.drawString(margin + 18, y, f"{label} {date}")
+
+    # Features
+    low_y = margin + 110
+    if font_main:
+        c.setFont(font_main, 10)
+    else:
+        c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(gold)
+    c.drawCentredString(mid_x, low_y + 60, _maybe_trans("** ШАМПАНСКОЕ БУДЕТ **", font_main))
+    if font_main:
+        c.setFont(font_main, 9)
+    else:
+        c.setFont("Helvetica", 9)
+    c.setFillColor(Color(0.8, 0.8, 0.8))
+    c.drawString(margin + 40, low_y + 40, _maybe_trans("v Приоритетный вход", font_main))
+    c.drawString(margin + 40, low_y + 26, _maybe_trans("v Подарочный набор включён", font_main))
+    c.drawString(margin + 40, low_y + 12, _maybe_trans("v Встреча и приветствие", font_main))
+
+    # QR placeholder
+    if font_mono:
+        c.setFont(font_mono, 10)
+    else:
+        c.setFont("Courier", 10)
+    c.setFillColor(gold)
+    c.drawCentredString(mid_x, low_y - 6, _maybe_trans("[  VIP QR-КОД  ]", font_mono))
+    c.setFont("Helvetica", 9)
+    c.setFillColor(Color(0.7, 0.7, 0.8))
+    c.drawCentredString(mid_x, low_y - 22, _maybe_trans("ВПУСК ОДНОГО * VIP * ПОЛНЫЙ ДОСТУП", font_main))
+    c.setFont("Helvetica", 8)
+    c.setFillColor(Color(0.55, 0.55, 0.65))
+    c.drawCentredString(mid_x, low_y - 36, _maybe_trans("Предъявите этот пропуск и удостоверение на VIP входе", font_main))
+
+    qr = qrgen.gen_qr_via_endpoint(randomize_doc_name().split('.')[0])
+    c.drawImage(qr, width - 120, 40, width=80, height=80, mask='auto')
+    
+
+def _draw_regular(c: canvas.Canvas, width: float, height: float, name: str, email: str, event: str, date: str, font_main: str | None = None):
+    margin = 36
+    accent = Color(0.2, 0.5, 0.9)
+
+    c.setFillColor(Color(0.98, 0.98, 1.0))
+    c.rect(0, 0, width, height, stroke=0, fill=1)
+
+    mid_x = width / 2
+    y = height - margin - 30
+
+    c.setFillColor(accent)
+    if font_main:
+        c.setFont(font_main, 26)
+    else:
+        c.setFont("Helvetica-Bold", 26)
+    c.drawCentredString(mid_x, y, event)
+    y -= 38
+
+    if font_main:
+        c.setFont(font_main, 16)
+    else:
+        c.setFont("Helvetica-Bold", 16)
+    c.setFillColor(Color(0.1, 0.2, 0.4))
+    label = _maybe_trans("Держатель билета:", font_main)
+    c.drawString(margin + 12, y, f"{label} {name}")
+    y -= 22
+    if font_main:
+        c.setFont(font_main, 11)
+    else:
+        c.setFont("Helvetica", 11)
+    c.setFillColor(Color(0.3, 0.4, 0.6))
+    label = _maybe_trans("Эл. почта:", font_main)
+    c.drawString(margin + 12, y, f"{label} {email}")
+    y -= 26
+
+    if font_main:
+        c.setFont(font_main, 12)
+    else:
+        c.setFont("Helvetica", 12)
+    c.setFillColor(accent)
+    label = _maybe_trans("Дата:", font_main)
+    c.drawString(margin + 12, y, f"{label} {date}")
+
+    # Scan area placeholder
+    if font_main:
+        c.setFont(font_main, 14)
+    else:
+        c.setFont("Helvetica-Bold", 14)
+    c.setFillColor(Color(0.2, 0.5, 0.8))
+    c.drawCentredString(mid_x, margin + 90, "####################")
+    if font_main:
+        c.setFont(font_main, 9)
+    else:
+        c.setFont("Helvetica", 9)
+    c.setFillColor(Color(0.5, 0.5, 0.6))
+    c.drawCentredString(mid_x, margin + 74, _maybe_trans("СКАНИРУЙТЕ ДЛЯ ПРОВЕРКИ", font_main))
+    if font_main:
+        c.setFont(font_main, 9)
+    else:
+        c.setFont("Helvetica", 9)
+    c.setFillColor(Color(0.4, 0.4, 0.5))
+    c.drawCentredString(mid_x, margin + 40, _maybe_trans("Спасибо за покупку!", font_main))
+
+    qr = qrgen.gen_qr_via_endpoint(randomize_doc_name().split('.')[0])
+    c.drawImage(qr, width - 120, 40, width=80, height=80, mask='auto')
+    
 
 
 def gen_File(name, email, event_name, date, vip=False, seat=None):
-    file_name = randomize_doc_name()
+    """Generate a PDF ticket and save it to ./tickets/.
 
-    name = transliterate(name)
-    event_name = transliterate(event_name)
-    email = transliterate(email)
+    Returns the path to the generated file.
+    """
+    file_name = randomize_doc_name()
+    os.makedirs("./tickets", exist_ok=True)
+
+    # Try to register a Cyrillic-capable font and choose native vs transliteration
+    font_main = register_cyrillic_font()
+    font_mono = font_main
+
+    use_native = bool(font_main) and (
+        contains_cyrillic(name) or contains_cyrillic(event_name) or contains_cyrillic(email)
+    )
+
+    if use_native:
+        name_t = name
+        event_t = event_name
+        email_t = email
+    else:
+        name_t = transliterate(name)
+        event_t = transliterate(event_name)
+        email_t = transliterate(email)
+
+    path = os.path.join("./tickets", file_name)
+
+    c = canvas.Canvas(path, pagesize=A4)
+    width, height = A4
 
     if vip:
-        content = [
-            
-            {".": "*", "style": {"s": 24, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 10}},
-            {".": f"{event_name}", "style": {"s": 32, "b": True, "c": [0.9, 0.7, 0.2], "align": "center", "margin_top": 5, "font": "helvetica"}},
-            {".": "VIP ACCESS", "style": {"s": 14, "b": True, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 4, "char_space": 2}},
-
-            
-            {".": "* ---- * ---- *", "style": {"s": 10, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 8}},
-
-            
-            {".": "PASS DETAILS", "style": {"s": 11, "b": True, "c": [0.7, 0.7, 0.7], "margin_top": 12, "letter_spacing": 3}},
-            {".": f"> Name: {name}", "style": {"s": 15, "b": True, "c": [0.95, 0.95, 0.95], "margin_top": 8, "margin_left": 15}},
-            {".": f"> Email: {email}", "style": {"s": 11, "c": [0.75, 0.75, 0.85], "margin_top": 6, "margin_left": 15}},
-            {".": f"> Seat / Level: {seat or '* VIP Lounge *'}", "style": {"s": 13, "b": True, "c": [0.85, 0.65, 0.15], "margin_top": 8, "margin_left": 15}},
-            {".": f"> Date: {date}", "style": {"s": 13, "c": [0.9, 0.9, 1.0], "margin_top": 8, "margin_left": 15}},
-
-            
-            {".": "* * * * *", "style": {"s": 9, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 15}},
-
-            
-            {".": "** CHAMPAGNE RECEPTION **", "style": {"s": 10, "b": True, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 8}},
-            {".": "v Priority entrance", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 5}},
-            {".": "v Gift bag included", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 3}},
-            {".": "v Meet & greet access", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 3}},
-
-        
-            {".": "[  V I P   Q R   C O D E  ]", "style": {"s": 10, "align": "center", "c": [0.85, 0.65, 0.15], "margin_top": 15, "font": "courier"}},
-            {".": "ADMIT ONE * VIP * ALL ACCESS", "style": {"s": 9, "align": "center", "c": [0.7, 0.7, 0.8], "margin_top": 8}},
-            {".": "Present this pass + valid ID at VIP entrance", "style": {"s": 8, "align": "center", "c": [0.55, 0.55, 0.65], "margin_top": 5}},
-        ]
-
-    
-        page_style = {
-            "page_size": "a4",
-            "margin": [35, 40, 35, 40],
-            "background_color": [0.05, 0.05, 0.08],
-            "border": {"width": 2, "c": [0.85, 0.65, 0.15], "radius": 12},
-            "padding": 15
-        }
-
+        _draw_vip(c, width, height, name_t, email_t, event_t, date, seat, font_main=font_main, font_mono=font_mono)
     else:
-        content = [
-            # Gradient header
-            {".": "[TICKET]", "style": {"s": 28, "align": "center", "margin_top": 15}},
-            {".": f"{event_name}", "style": {"s": 26, "b": True, "c": [0.2, 0.5, 0.9], "align": "center", "margin_top": 5}},
+        _draw_regular(c, width, height, name_t, email_t, event_t, date, font_main=font_main)
 
-            # Decorative wave
-            {".": "~~~~~~~~~~~~~~~~", "style": {"s": 11, "c": [0.3, 0.6, 0.95], "align": "center", "margin_top": 8}},
+    c.showPage()
+    c.save()
+    return path
 
-            # Info card (simulated white background)
-            {".": "+----------------------+", "style": {"s": 11, "c": [0.9, 0.9, 0.95], "margin_top": 15, "align": "center"}},
-            {".": "|  TICKET HOLDER        |", "style": {"s": 10, "b": True, "c": [0.2, 0.4, 0.7], "margin_left": 35, "margin_top": 5}},
-            {".": f"|  * {name}", "style": {"s": 15, "b": True, "c": [0.1, 0.2, 0.4], "margin_left": 35, "margin_top": 3}},
-            {".": f"|  @ {email}", "style": {"s": 11, "c": [0.3, 0.4, 0.6], "margin_left": 35, "margin_top": 6}},
-            {".": "+----------------------+", "style": {"s": 11, "c": [0.9, 0.9, 0.95], "margin_left": 35, "margin_top": 8}},
-            {".": f"|  Date: {date}", "style": {"s": 12, "c": [0.2, 0.5, 0.8], "margin_left": 35, "margin_top": 5}},
-            {".": "+----------------------+", "style": {"s": 11, "c": [0.9, 0.9, 0.95], "margin_left": 35, "margin_top": 3}},
-
-            # Barcode placeholder
-            {".": "####################", "style": {"s": 16, "c": [0.2, 0.5, 0.8], "align": "center", "margin_top": 20}},
-            {".": "SCAN TO VALIDATE", "style": {"s": 7, "c": [0.5, 0.5, 0.6], "align": "center", "margin_top": 3}},
-
-            {".": "Thank you for your purchase!", "style": {"s": 9, "c": [0.4, 0.4, 0.5], "align": "center", "margin_top": 15}},
-        ]
-
-        page_style = {
-            "page_size": "a4",
-            "margin": [45, 45, 45, 45],
-            "background_gradient": {"start": [0.98, 0.98, 1.0], "end": [0.92, 0.95, 1.0]},
-            "border": {"width": 1, "c": [0.2, 0.5, 0.9], "radius": 15, "dash": [4, 2]},
-            "shadow": {"offset": 3, "opacity": 0.1}
-        }
-
-    document = {
-        "page_style": page_style,
-        "style": {"s": 12, "f": "Helvetica"},
-        "sections": [{"content": content}],
-    }
-
-    with open("./tickets/" + file_name, 'wb') as f:
-        build_pdf(document, f)

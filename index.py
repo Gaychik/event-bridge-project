@@ -7,6 +7,10 @@ from pydantic import BaseModel, EmailStr
 import uuid
 import pdfgen
 import random
+import pdf_server
+
+
+pdf_server.run_server()
 
 class RegistrationEvent(BaseModel):
     registration_id: str = str(uuid.uuid4())
