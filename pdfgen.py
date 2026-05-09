@@ -36,37 +36,37 @@ def gen_File(name, email, event_name, date, vip=False, seat=None):
 
     if vip:
         content = [
-            # Decorative top line
+            
             {".": "*", "style": {"s": 24, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 10}},
             {".": f"{event_name}", "style": {"s": 32, "b": True, "c": [0.9, 0.7, 0.2], "align": "center", "margin_top": 5, "font": "helvetica"}},
             {".": "VIP ACCESS", "style": {"s": 14, "b": True, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 4, "char_space": 2}},
 
-            # Gold separator line
+            
             {".": "* ---- * ---- *", "style": {"s": 10, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 8}},
 
-            # Main info box
+            
             {".": "PASS DETAILS", "style": {"s": 11, "b": True, "c": [0.7, 0.7, 0.7], "margin_top": 12, "letter_spacing": 3}},
             {".": f"> Name: {name}", "style": {"s": 15, "b": True, "c": [0.95, 0.95, 0.95], "margin_top": 8, "margin_left": 15}},
             {".": f"> Email: {email}", "style": {"s": 11, "c": [0.75, 0.75, 0.85], "margin_top": 6, "margin_left": 15}},
             {".": f"> Seat / Level: {seat or '* VIP Lounge *'}", "style": {"s": 13, "b": True, "c": [0.85, 0.65, 0.15], "margin_top": 8, "margin_left": 15}},
             {".": f"> Date: {date}", "style": {"s": 13, "c": [0.9, 0.9, 1.0], "margin_top": 8, "margin_left": 15}},
 
-            # Visual separator
+            
             {".": "* * * * *", "style": {"s": 9, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 15}},
 
-            # Extra info block
+            
             {".": "** CHAMPAGNE RECEPTION **", "style": {"s": 10, "b": True, "c": [0.85, 0.65, 0.15], "align": "center", "margin_top": 8}},
             {".": "v Priority entrance", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 5}},
             {".": "v Gift bag included", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 3}},
             {".": "v Meet & greet access", "style": {"s": 10, "c": [0.8, 0.8, 0.8], "margin_left": 20, "margin_top": 3}},
 
-            # Bottom placeholder QR code
+        
             {".": "[  V I P   Q R   C O D E  ]", "style": {"s": 10, "align": "center", "c": [0.85, 0.65, 0.15], "margin_top": 15, "font": "courier"}},
             {".": "ADMIT ONE * VIP * ALL ACCESS", "style": {"s": 9, "align": "center", "c": [0.7, 0.7, 0.8], "margin_top": 8}},
             {".": "Present this pass + valid ID at VIP entrance", "style": {"s": 8, "align": "center", "c": [0.55, 0.55, 0.65], "margin_top": 5}},
         ]
 
-        # VIP page style with dark theme and gold accents
+    
         page_style = {
             "page_size": "a4",
             "margin": [35, 40, 35, 40],
