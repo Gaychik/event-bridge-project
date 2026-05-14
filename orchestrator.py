@@ -10,7 +10,7 @@ load_dotenv()
 HOST = os.getenv("RABBITMQ_HOST", "localhost")
 PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
 USER = os.getenv("RABBITMQ_USER", "guest")
-PASSWORD = os.getenv("RABBITMQ_PASSWORD", "12345")
+PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 
 # Настройки RabbitMQ
 EXCHANGE_NAME = 'event_topic_exchange'
