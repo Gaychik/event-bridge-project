@@ -1,4 +1,4 @@
-# email_service.py
+# email-service/main.py
 import pika
 import json
 import smtplib
