@@ -3,8 +3,11 @@
 # FastAPI
 from fastapi import FastAPI
 
+# Импорт роутера
+from routers.register import router as register_router
+
 # Зависимости
-from bootstrap.lifespan import app_lifespan
+from .lifespan import app_lifespan
 
 
 def create_app() -> FastAPI:
@@ -12,6 +15,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Event Bridge Event API", version="1.0.0", lifespan=app_lifespan
     )
+
+    app.include_router(register_router)
 
     @app.get("/")
     async def root() -> dict[str, str]:

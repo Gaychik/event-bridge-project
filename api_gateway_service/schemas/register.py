@@ -1,15 +1,15 @@
 """Схемы для регистрации"""
 
-from pydantic import BaseModel, Field
-# from pydantic import EmailStr # <-- Расскомментировать, если решите использовать
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RegisterUserRequest(BaseModel):
     """Схема запроса к API"""
 
     event_name: str = Field(..., min_length=2, max_length=100)
-    user_email: str = Field(...)
-    # user_email: EmailStr = Field(..., max_length=255) # <-- Будет автоматическая валидация на соответствие международному стандарту: название_почты@регистратор.домен
+    user_email: EmailStr = Field(
+        ..., max_length=255
+    )  # <-- Будет автоматическая валидация на соответствие международному стандарту: название_почты@регистратор.домен
     user_name: str = Field(..., min_length=2, max_length=100)
     is_vip: bool = False
 
