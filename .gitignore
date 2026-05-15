@@ -1,0 +1,7 @@
+generated_tickets
+__pycache__
+*pycache__/
+*.pyc
+.github/
+*.env
+*.venv
